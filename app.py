@@ -19,15 +19,34 @@ def create_app(config=None):
         app.config.from_object(active_config)
     else:
         app.config.from_object(config)
-    
-    # Initialize database
-    db.init_app(app)
-    
-    # Create instance folder if it doesn't exist
+    # Create instance folder if it doesn't exist (ensure writable path for sqlite)
     try:
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError:
         pass
+
+    # If no external DATABASE_URL is provided, point SQLite to the instance folder
+    # This avoids attempting to write to a read-only location created during build
+    if not os.environ.get('DATABASE_URL'):
+        db_file = os.path.join(app.instance_path, 'arcaload.db')
+        sqlite_uri = f"sqlite:///{db_file}"
+        app.config.setdefault('SQLALCHEMY_DATABASE_URI', sqlite_uri)
+
+        # Ensure the DB file exists and has permissive write permissions
+        try:
+            # create empty file if missing
+            if not os.path.exists(db_file):
+                open(db_file, 'a').close()
+            # attempt to set writable permissions (best-effort; may fail on some hosts)
+            try:
+                os.chmod(db_file, 0o660)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    # Initialize database
+    db.init_app(app)
     
     # Register blueprints
     from routes import register_blueprints
