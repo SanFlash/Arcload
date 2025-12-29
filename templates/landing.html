@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Arcaload - Download Games Free{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container hero-content">
+        <div class="hero-text">
+            <h2 class="hero-title">Welcome to Arcaload</h2>
+            <p class="hero-subtitle">Your Ultimate Free Game Download Platform</p>
+            <p class="hero-description">Discover, search, and download your favorite games instantly from curated legal sources</p>
+            <button class="btn btn-primary btn-lg" onclick="document.getElementById('search-section').scrollIntoView({behavior: 'smooth'})">
+                Start Downloading
+            </button>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-icon">🎮</div>
+        </div>
+    </div>
+</section>
+
+<!-- How it Works -->
+<section class="how-it-works">
+    <div class="container">
+        <h2>How Arcaload Works</h2>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Search</h3>
+                <p>Use our search bar to find your favorite game</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Browse</h3>
+                <p>View game details, descriptions, and cover images</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Download</h3>
+                <p>Click download to get your game from legal sources</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <h3>Enjoy</h3>
+                <p>Install and enjoy your game instantly</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Search Section -->
+<section id="search-section" class="search-section">
+    <div class="container">
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Search for games, genres, etc..."
+                autocomplete="off"
+            >
+            <div id="search-results" class="search-results hidden"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Games Section -->
+<section id="games" class="games-section">
+    <div class="container">
+        <h2>Featured Games</h2>
+        <div class="games-grid">
+            {% if games %}
+                {% for game in games %}
+                <div class="game-card" data-game-id="{{ game.id }}">
+                    <div class="game-image-container">
+                        <img 
+                            src="{{ game.cover_image_url }}" 
+                            alt="{{ game.title }}" 
+                            class="game-image"
+                            onerror="this.src='https://via.placeholder.com/250x350?text=No+Image'"
+                        >
+                        <div class="game-overlay">
+                            <button class="btn btn-primary btn-download" onclick="downloadGame(event, {{ game.id }})">
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">{{ game.title }}</h3>
+                        <p class="game-genre">{{ game.genre }}</p>
+                        <p class="game-description">{{ game.description[:80] }}...</p>
+                        <p class="game-downloads">📥 {{ game.downloads }} downloads</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">
+                    <p>No games available yet. Check back soon!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Request Game Section -->
+<section class="request-section">
+    <div class="container">
+        <div class="request-card">
+            <h2>Can't Find What You're Looking For?</h2>
+            <p>Request a game and we'll try to add it to our platform!</p>
+            <form id="request-form" class="request-form">
+                <input 
+                    type="text" 
+                    id="game-title" 
+                    placeholder="Game Title" 
+                    required
+                    maxlength="200"
+                >
+                <input 
+                    type="email" 
+                    id="user-email" 
+                    placeholder="Your Email (optional)" 
+                    maxlength="120"
+                >
+                <button type="submit" class="btn btn-secondary">Request Game</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Disclaimer -->
+<section id="disclaimer" class="disclaimer-section">
+    <div class="container">
+        <h3>⚠️ Disclaimer</h3>
+        <p>
+            Arcaload only provides links to games from free and legal sources. We do not host any copyrighted content. 
+            All game links are sourced from legitimate platforms and legal distribution channels. Users are responsible 
+            for respecting intellectual property rights and using downloaded games in accordance with their respective licenses.
+        </p>
+    </div>
+</section>
+
+{% endblock %}

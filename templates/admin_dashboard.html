@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Arcaload{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Admin Panel</h2>
+            <p>Welcome, {{ session.get('admin_username', 'Admin') }}!</p>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" onclick="switchTab('games')" class="nav-item active">
+                🎮 My Games
+            </a>
+            <a href="#" onclick="switchTab('requests')" class="nav-item">
+                📋 Game Requests
+            </a>
+            <a href="#" onclick="switchTab('stats')" class="nav-item">
+                📊 Statistics
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/admin/logout" class="btn btn-danger btn-block">Logout</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Games Tab -->
+        <div id="games-tab" class="tab-content active">
+            <div class="tab-header">
+                <h2>My Games</h2>
+                <button class="btn btn-primary" onclick="openAddGameModal()">+ Add New Game</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Games</h4>
+                    <p class="stat-value">{{ total_games }}</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Downloads</h4>
+                    <p class="stat-value">{{ total_downloads }}</p>
+                </div>
+            </div>
+
+            <div class="games-table-container">
+                <table class="games-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Genre</th>
+                            <th>Downloads</th>
+                            <th>Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if games %}
+                            {% for game in games %}
+                            <tr>
+                                <td>{{ game.title }}</td>
+                                <td>{{ game.genre }}</td>
+                                <td>{{ game.downloads }}</td>
+                                <td>{{ game.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary" onclick="editGame({{ game.id }})">Edit</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteGame({{ game.id }})">Delete</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">No games added yet</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if games_pagination.pages > 1 %}
+            <div class="pagination">
+                {% if games_pagination.has_prev %}
+                    <a href="?page={{ games_pagination.prev_num }}" class="btn btn-sm">← Previous</a>
+                {% endif %}
+                
+                {% for page_num in games_pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == games_pagination.page %}
+                            <button class="btn btn-sm btn-primary">{{ page_num }}</button>
+                        {% else %}
+                            <a href="?page={{ page_num }}" class="btn btn-sm">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if games_pagination.has_next %}
+                    <a href="?page={{ games_pagination.next_num }}" class="btn btn-sm">Next →</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Requests Tab -->
+        <div id="requests-tab" class="tab-content">
+            <div class="tab-header">
+                <h2>Game Requests</h2>
+                <p class="tab-subtitle">Total Requests: {{ total_requests }}</p>
+            </div>
+
+            <div class="requests-table-container">
+                <table class="requests-table">
+                    <thead>
+                        <tr>
+                            <th>Game Title</th>
+                            <th>User Email</th>
+                            <th>Status</th>
+                            <th>Requested</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if game_requests %}
+                            {% for req in game_requests %}
+                            <tr class="status-{{ req.status }}">
+                                <td>{{ req.game_title }}</td>
+                                <td>{{ req.user_email or 'Anonymous' }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ req.status }}">
+                                        {{ req.status.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <select class="request-status" onchange="updateRequestStatus({{ req.id }}, this.value)">
+                                        <option value="pending" {% if req.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="added" {% if req.status == 'added' %}selected{% endif %}>Added</option>
+                                        <option value="rejected" {% if req.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">No requests yet</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="stats-tab" class="tab-content">
+            <div class="tab-header">
+                <h2>Statistics</h2>
+            </div>
+
+            <div class="stats-grid-large">
+                <div class="stat-card-large">
+                    <h4>Total Games</h4>
+                    <p class="stat-value">{{ total_games }}</p>
+                    <p class="stat-label">Games in library</p>
+                </div>
+                <div class="stat-card-large">
+                    <h4>Total Downloads</h4>
+                    <p class="stat-value">{{ total_downloads }}</p>
+                    <p class="stat-label">All-time downloads</p>
+                </div>
+                <div class="stat-card-large">
+                    <h4>Pending Requests</h4>
+                    <p class="stat-value">{{ game_requests|selectattr('status', 'equalto', 'pending')|list|length }}</p>
+                    <p class="stat-label">Awaiting review</p>
+                </div>
+                <div class="stat-card-large">
+                    <h4>Total Requests</h4>
+                    <p class="stat-value">{{ total_requests }}</p>
+                    <p class="stat-label">User requests</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Add Game Modal -->
+<div id="add-game-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Game</h3>
+            <button class="modal-close" onclick="closeModal('add-game-modal')">&times;</button>
+        </div>
+        <form id="add-game-form" class="modal-form">
+            <div class="form-group">
+                <label for="game-title">Game Title *</label>
+                <input type="text" id="game-title" name="title" required maxlength="200">
+            </div>
+            <div class="form-group">
+                <label for="game-genre">Genre *</label>
+                <input type="text" id="game-genre" name="genre" required maxlength="100">
+            </div>
+            <div class="form-group">
+                <label for="game-description">Description *</label>
+                <textarea id="game-description" name="description" required maxlength="1000" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="game-cover">Cover Image URL *</label>
+                <input type="url" id="game-cover" name="cover_image_url" required maxlength="500">
+            </div>
+            <div class="form-group">
+                <label for="game-link">Download Link *</label>
+                <input type="url" id="game-link" name="download_link" required maxlength="500">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('add-game-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Game</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
